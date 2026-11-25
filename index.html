@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="vi" class="antialiased">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Note Case Hàng Ngày</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Cấu hình Tailwind: Font Inter và Dark Mode theo class -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Khởi tạo theme sớm trước khi render để tránh hiện tượng nháy sáng/tối -->
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('daily_cases_theme_v1');
+        if (
+          savedTheme === 'dark' ||
+          (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {
+        // Bỏ qua nếu trình duyệt chặn localStorage
+      }
+    })();
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans min-h-screen transition-colors duration-200 selection:bg-blue-200 dark:selection:bg-blue-800">
+
+  <!-- Container chính tối ưu cho màn hình điện thoại (Mobile-First) -->
+  <div class="max-w-lg mx-auto min-h-screen flex flex-col pb-28">
+
+    <!-- ==================== HEADER: NGÀY GIỜ THỰC TẾ & CÔNG CỤ ==================== -->
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 transition-colors">
+      <div class="flex items-center justify-between gap-3">
+        <!-- Ngày & Đồng hồ thực tế -->
+        <div class="min-w-0">
+          <p id="live-date" class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+            Đang tải ngày...
+          </p>
+          <div class="flex items-baseline gap-2 mt-0.5">
+            <h1 id="live-clock" class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
+              00:00:00
+            </h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+              Case Note
+            </span>
+          </div>
+        </div>
+
+        <!-- Nút chức năng trên Header: Backup & Sáng/Tối -->
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Nút Sao lưu / Xuất dữ liệu -->
+          <button
+            id="btn-open-backup"
+            type="button"
+            aria-label="Sao lưu & Xuất dữ liệu"
+            title="Sao lưu & Xuất dữ liệu"
+            class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          </button>
+
+          <!-- Nút Chuyển chế độ Sáng / Tối -->
+          <button
+            id="btn-toggle-theme"
+            type="button"
+            aria-label="Đổi giao diện Sáng / Tối"
+            title="Đổi giao diện Sáng / Tối"
+            class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all"
+          >
+            <!-- Icon Mặt trời (hiện ở dark mode) -->
+            <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden dark:block text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <!-- Icon Mặt trăng (hiện ở light mode) -->
+            <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 block dark:hidden text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ==================== NỘI DUNG CHÍNH ==================== -->
+    <main class="flex-1 px-4 pt-4 space-y-4">
+
+      <!-- Khu vực Bộ chọn ngày & Chế độ xem -->
+      <section class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-3">
+        <!-- Dòng 1: Chọn ngày + Nút Hôm nay / Tất cả -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- Bộ chọn ngày có nút tiến/lùi -->
+          <div class="flex items-center gap-1.5 flex-1 min-w-[190px]">
+            <button
+              id="btn-prev-day"
+              type="button"
+              aria-label="Ngày trước"
+              class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <input
+              id="date-picker"
+              type="date"
+              aria-label="Chọn ngày xem case"
+              class="flex-1 min-w-0 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base font-medium rounded-xl px-3 py-1.5 border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition"
+            />
+
+            <button
+              id="btn-next-day"
+              type="button"
+              aria-label="Ngày sau"
+              class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Nút chuyển nhanh Hôm nay / Tất cả -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              id="btn-today"
+              type="button"
+              class="px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-blue-600 text-white shadow-sm"
+            >
+              Hôm nay
+            </button>
+            <button
+              id="btn-all-days"
+              type="button"
+              class="px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Tất cả
+            </button>
+          </div>
+        </div>
+
+        <!-- Dòng 2: Thống kê nhanh kiêm bộ lọc trạng thái -->
+        <div class="grid grid-cols-3 gap-2 pt-1">
+          <button
+            type="button"
+            data-status-filter="all"
+            class="status-filter-btn flex flex-col items-center justify-center py-2 px-2 rounded-xl border text-center transition active:scale-95 bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/60 dark:border-blue-800 dark:text-blue-300"
+          >
+            <span id="stat-total" class="text-lg font-bold leading-tight">0</span>
+            <span class="text-[11px] font-medium mt-0.5">Tổng case</span>
+          </button>
+
+          <button
+            type="button"
+            data-status-filter="pending"
+            class="status-filter-btn flex flex-col items-center justify-center py-2 px-2 rounded-xl border text-center transition active:scale-95 bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-300"
+          >
+            <span id="stat-pending" class="text-lg font-bold leading-tight text-amber-600 dark:text-amber-400">0</span>
+            <span class="text-[11px] font-medium mt-0.5">Đang xử lý</span>
+          </button>
+
+          <button
+            type="button"
+            data-status-filter="done"
+            class="status-filter-btn flex flex-col items-center justify-center py-2 px-2 rounded-xl border text-center transition active:scale-95 bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-300"
+          >
+            <span id="stat-done" class="text-lg font-bold leading-tight text-emerald-600 dark:text-emerald-400">0</span>
+            <span class="text-[11px] font-medium mt-0.5">Đã xong</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Ô tìm kiếm nhanh -->
+      <section class="relative">
+        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <!-- Dùng text-base (16px) để tránh iOS Safari tự động zoom khi focus -->
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Tìm theo tiêu đề hoặc nội dung case..."
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl pl-10 pr-10 py-3 text-base text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition"
+        />
+        <button
+          id="btn-clear-search"
+          type="button"
+          aria-label="Xóa từ khóa tìm kiếm"
+          class="hidden absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </section>
+
+      <!-- Tiêu đề phụ danh sách -->
+      <div class="flex items-center justify-between px-1">
+        <h2 id="list-heading" class="text-sm font-semibold text-slate-600 dark:text-slate-400">
+          Danh sách case hôm nay
+        </h2>
+        <span id="list-count-label" class="text-xs font-medium text-slate-400 dark:text-slate-500">
+          0 kết quả
+        </span>
+      </div>
+
+      <!-- Danh sách thẻ Case -->
+      <section id="case-list" class="space-y-3" aria-live="polite">
+        <!-- Các thẻ case sẽ được render tự động bởi JavaScript -->
+      </section>
+
+      <!-- Trạng thái rỗng (Empty State) -->
+      <section id="empty-state" class="hidden py-12 px-4 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h3 id="empty-title" class="text-base font-semibold text-slate-700 dark:text-slate-200">
+          Chưa có case nào trong ngày
+        </h3>
+        <p id="empty-subtitle" class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
+          Bấm nút "+ Thêm Case" ở góc dưới bên phải để bắt đầu ghi chú công việc của bạn.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== NÚT NỔI THÊM MỚI (FAB) ==================== -->
+  <button
+    id="btn-add-case"
+    type="button"
+    class="fixed bottom-5 right-5 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold px-5 py-3.5 rounded-full shadow-lg shadow-blue-600/30 dark:shadow-blue-900/50 transition-all"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+    </svg>
+    <span class="text-sm sm:text-base">Thêm Case</span>
+  </button>
+
+  <!-- ==================== MODAL / BOTTOM SHEET THÊM & SỬA CASE ==================== -->
+  <div
+    id="case-modal"
+    class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-xs p-0 sm:p-4 transition-opacity"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+  >
+    <div
+      id="case-modal-panel"
+      class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 dark:border-slate-800 p-5 sm:p-6 max-h-[90vh] flex flex-col transition-transform"
+    >
+      <!-- Thanh kéo trang trí cho giao diện Bottom Sheet trên mobile -->
+      <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4 sm:hidden"></div>
+
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="modal-title" class="text-lg font-bold text-slate-900 dark:text-white">
+          Thêm Case Mới
+        </h2>
+        <button
+          id="btn-close-modal"
+          type="button"
+          aria-label="Đóng"
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="case-form" class="space-y-4 overflow-y-auto flex-1 pr-0.5">
+        <input type="hidden" id="case-id-input" />
+
+        <!-- Trường Tiêu đề (Bắt buộc) -->
+        <div>
+          <label for="case-title-input" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            Tiêu đề case <span class="text-rose-500">*</span>
+          </label>
+          <input
+            id="case-title-input"
+            type="text"
+            placeholder="Ví dụ: Khách hàng A báo lỗi đăng nhập..."
+            class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-3 text-base text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition"
+          />
+          <p id="title-error" class="hidden text-xs font-medium text-rose-500 mt-1.5">
+            Vui lòng nhập tiêu đề cho case này.
+          </p>
+        </div>
+
+        <!-- Trường Nội dung chi tiết -->
+        <div>
+          <label for="case-content-input" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            Nội dung chi tiết
+          </label>
+          <textarea
+            id="case-content-input"
+            rows="5"
+            placeholder="Ghi chú chi tiết, mã đơn hàng, thông tin liên hệ hoặc các bước xử lý..."
+            class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-3 text-base text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition resize-y"
+          ></textarea>
+        </div>
+
+        <!-- Ngày ghi nhận (mặc định theo ngày đang chọn) -->
+        <div>
+          <label for="case-date-input" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            Ngày thực hiện
+          </label>
+          <input
+            id="case-date-input"
+            type="date"
+            class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-base text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition"
+          />
+        </div>
+
+        <!-- Nút hành động -->
+        <div class="flex items-center gap-3 pt-2">
+          <button
+            id="btn-cancel-modal"
+            type="button"
+            class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 active:scale-95 transition"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 active:scale-95 transition"
+          >
+            Lưu Case
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL XÁC NHẬN XÓA ==================== -->
+  <div
+    id="delete-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center space-y-4">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Xóa case này?</h3>
+        <p id="delete-modal-desc" class="text-sm text-slate-500 dark:text-slate-400 mt-1 break-words">
+          Bạn có chắc muốn xóa case này không? Hành động này không thể hoàn tác.
+        </p>
+      </div>
+      <div class="flex items-center gap-3 pt-1">
+        <button
+          id="btn-cancel-delete"
+          type="button"
+          class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 active:scale-95 transition"
+        >
+          Hủy
+        </button>
+        <button
+          id="btn-confirm-delete"
+          type="button"
+          class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 active:scale-95 transition"
+        >
+          Xóa ngay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL SAO LƯU & XUẤT DỮ LIỆU ==================== -->
+  <div
+    id="backup-modal"
+    class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-xs p-0 sm:p-4"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+      <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto sm:hidden"></div>
+
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Sao lưu & Xuất dữ liệu</h3>
+        <button
+          id="btn-close-backup"
+          type="button"
+          aria-label="Đóng"
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        Dữ liệu của bạn được tự động lưu vào bộ nhớ trình duyệt (LocalStorage). Bạn có thể sao chép báo cáo nhanh hoặc tải file dự phòng bên dưới.
+      </p>
+
+      <div class="space-y-2.5">
+        <!-- Sao chép danh sách dạng văn bản (tiện gửi báo cáo Zalo/Chat) -->
+        <button
+          id="btn-copy-text"
+          type="button"
+          class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-left active:scale-[0.99] transition"
+        >
+          <div class="p-2 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">Sao chép danh sách đang xem (Text)</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Dễ dàng dán vào Zalo, Telegram hoặc báo cáo</div>
+          </div>
+        </button>
+
+        <!-- Xuất file JSON -->
+        <button
+          id="btn-export-json"
+          type="button"
+          class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-left active:scale-[0.99] transition"
+        >
+          <div class="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">Tải file sao lưu (.JSON)</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Lưu toàn bộ dữ liệu tất cả các ngày về máy</div>
+          </div>
+        </button>
+
+        <!-- Sao chép JSON -->
+        <button
+          id="btn-copy-json"
+          type="button"
+          class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-left active:scale-[0.99] transition"
+        >
+          <div class="p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">Sao chép dữ liệu JSON</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Copy nhanh mã JSON để lưu trữ</div>
+          </div>
+        </button>
+
+        <!-- Nhập file JSON để khôi phục -->
+        <label
+          for="import-json-input"
+          class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-left cursor-pointer active:scale-[0.99] transition"
+        >
+          <div class="p-2 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">Khôi phục từ file (.JSON)</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Nhập thêm các case từ file đã sao lưu trước đó</div>
+          </div>
+          <input id="import-json-input" type="file" accept=".json,application/json" class="hidden" />
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST THÔNG BÁO ==================== -->
+  <div
+    id="toast-container"
+    class="fixed top-4 left-1/2 -translate-x-1/2 z-[60] pointer-events-none w-[90%] max-w-sm flex flex-col items-center gap-2"
+  ></div>
+
+  <!-- ==================== LOGIC ỨNG DỤNG (JAVASCRIPT) ==================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // -------------------- HẰNG SỐ & TRẠNG THÁI (STATE) --------------------
+      const STORAGE_KEY = 'daily_cases_data_v1';
+      const THEME_KEY = 'daily_cases_theme_v1';
+
+      // Trạng thái toàn cục của ứng dụng
+      const state = {
+        cases: [],                    // Danh sách tất cả các case
+        viewMode: 'day',              // 'day' (xem theo ngày) hoặc 'all' (xem tất cả)
+        selectedDate: getTodayStr(),  // Chuỗi ngày YYYY-MM-DD
+        statusFilter: 'all',          // 'all' | 'pending' | 'done'
+        searchQuery: '',              // Từ khóa tìm kiếm
+        pendingDeleteId: null,        // ID case đang chờ xác nhận xóa
+      };
+
+      // -------------------- DOM ELEMENTS --------------------
+      const els = {
+        liveDate: document.getElementById('live-date'),
+        liveClock: document.getElementById('live-clock'),
+        btnToggleTheme: document.getElementById('btn-toggle-theme'),
+        btnOpenBackup: document.getElementById('btn-open-backup'),
+
+        datePicker: document.getElementById('date-picker'),
+        btnPrevDay: document.getElementById('btn-prev-day'),
+        btnNextDay: document.getElementById('btn-next-day'),
+        btnToday: document.getElementById('btn-today'),
+        btnAllDays: document.getElementById('btn-all-days'),
+
+        statTotal: document.getElementById('stat-total'),
+        statPending: document.getElementById('stat-pending'),
+        statDone: document.getElementById('stat-done'),
+        statusFilterBtns: document.querySelectorAll('.status-filter-btn'),
+
+        searchInput: document.getElementById('search-input'),
+        btnClearSearch: document.getElementById('btn-clear-search'),
+
+        listHeading: document.getElementById('list-heading'),
+        listCountLabel: document.getElementById('list-count-label'),
+        caseList: document.getElementById('case-list'),
+        emptyState: document.getElementById('empty-state'),
+        emptyTitle: document.getElementById('empty-title'),
+        emptySubtitle: document.getElementById('empty-subtitle'),
+
+        btnAddCase: document.getElementById('btn-add-case'),
+
+        // Modal Thêm/Sửa
+        caseModal: document.getElementById('case-modal'),
+        modalTitle: document.getElementById('modal-title'),
+        btnCloseModal: document.getElementById('btn-close-modal'),
+        btnCancelModal: document.getElementById('btn-cancel-modal'),
+        caseForm: document.getElementById('case-form'),
+        caseIdInput: document.getElementById('case-id-input'),
+        caseTitleInput: document.getElementById('case-title-input'),
+        caseContentInput: document.getElementById('case-content-input'),
+        caseDateInput: document.getElementById('case-date-input'),
+        titleError: document.getElementById('title-error'),
+
+        // Modal Xóa
+        deleteModal: document.getElementById('delete-modal'),
+        deleteModalDesc: document.getElementById('delete-modal-desc'),
+        btnCancelDelete: document.getElementById('btn-cancel-delete'),
+        btnConfirmDelete: document.getElementById('btn-confirm-delete'),
+
+        // Modal Backup
+        backupModal: document.getElementById('backup-modal'),
+        btnCloseBackup: document.getElementById('btn-close-backup'),
+        btnCopyText: document.getElementById('btn-copy-text'),
+        btnExportJson: document.getElementById('btn-export-json'),
+        btnCopyJson: document.getElementById('btn-copy-json'),
+        importJsonInput: document.getElementById('import-json-input'),
+
+        toastContainer: document.getElementById('toast-container'),
+      };
+
+      // -------------------- TIỆN ÍCH NGÀY GIỜ --------------------
+
+      /**
+       * Trả về chuỗi ngày hôm nay theo giờ địa phương định dạng YYYY-MM-DD
+       */
+      function getTodayStr() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      /**
+       * Cộng hoặc trừ ngày từ chuỗi YYYY-MM-DD
+       */
+      function shiftDate(dateStr, offsetDays) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        date.setDate(date.getDate() + offsetDays);
+        const ny = date.getFullYear();
+        const nm = String(date.getMonth() + 1).padStart(2, '0');
+        const nd = String(date.getDate()).padStart(2, '0');
+        return `${ny}-${nm}-${nd}`;
+      }
+
+      /**
+       * Chuyển YYYY-MM-DD thành DD/MM/YYYY để hiển thị
+       */
+      function formatDateVN(dateStr) {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        return `${d}/${m}/${y}`;
+      }
+
+      /**
+       * Chuyển timestamp (ISO hoặc ms) thành chuỗi giờ HH:MM
+       */
+      function formatTimeHM(isoString) {
+        const date = new Date(isoString);
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+      }
+
+      /**
+       * Cập nhật đồng hồ và ngày tiếng Việt trên Header mỗi giây
+       */
+      function updateLiveClock() {
+        const now = new Date();
+        const daysVN = [
+          'Chủ Nhật',
+          'Thứ Hai',
+          'Thứ Ba',
+          'Thứ Tư',
+          'Thứ Năm',
+          'Thứ Sáu',
+          'Thứ Bảy',
+        ];
+        const dayName = daysVN[now.getDay()];
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+
+        els.liveDate.textContent = `${dayName}, ${dd}/${mm}/${yyyy}`;
+        els.liveClock.textContent = `${hh}:${min}:${ss}`;
+      }
+
+      // -------------------- LƯU TRỮ LOCALSTORAGE --------------------
+
+      /**
+       * Đọc dữ liệu từ localStorage
+       */
+      function loadCases() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              state.cases = parsed;
+              return;
+            }
+          }
+          state.cases = [];
+        } catch (err) {
+          console.error('Lỗi đọc localStorage:', err);
+          state.cases = [];
+          showToast('Không thể đọc bộ nhớ trình duyệt.', 'error');
+        }
+      }
+
+      /**
+       * Lưu toàn bộ danh sách cases vào localStorage
+       */
+      function saveCases() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cases));
+        } catch (err) {
+          console.error('Lỗi ghi localStorage:', err);
+          showToast('Bộ nhớ trình duyệt đầy hoặc bị chặn!', 'error');
+        }
+      }
+
+      // -------------------- TIỆN ÍCH BẢO MẬT & GIAO DIỆN --------------------
+
+      /**
+       * Escape ký tự HTML để chống XSS khi render nội dung người dùng nhập
+       */
+      function escapeHTML(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      /**
+       * Tạo ID duy nhất cho mỗi case
+       */
+      function generateId() {
+        return 'case_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      }
+
+      /**
+       * Hiển thị thông báo Toast gọn đẹp (thay thế hoàn toàn cho alert)
+       */
+      function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        const colorClasses =
+          type === 'error'
+            ? 'bg-rose-600 text-white'
+            : type === 'info'
+            ? 'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900'
+            : 'bg-emerald-600 text-white';
+
+        toast.className = `${colorClasses} px-4 py-2.5 rounded-2xl shadow-lg text-sm font-medium text-center transition-all duration-300 opacity-0 -translate-y-2`;
+        toast.textContent = message;
+
+        els.toastContainer.appendChild(toast);
+
+        // Kích hoạt animation hiện lên
+        requestAnimationFrame(() => {
+          toast.classList.remove('opacity-0', '-translate-y-2');
+          toast.classList.add('opacity-100', 'translate-y-0');
+        });
+
+        // Tự động ẩn sau 2.5 giây
+        setTimeout(() => {
+          toast.classList.remove('opacity-100', 'translate-y-0');
+          toast.classList.add('opacity-0', '-translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 2500);
+      }
+
+      /**
+       * Sao chép chuỗi vào clipboard bằng document.execCommand('copy') để tương thích tốt trong mọi môi trường
+       */
+      function copyToClipboard(text, successMsg) {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.top = '-9999px';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          textarea.setSelectionRange(0, text.length);
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+
+          if (ok) {
+            showToast(successMsg || 'Đã sao chép vào bộ nhớ tạm!');
+          } else {
+            showToast('Không thể sao chép tự động trên trình duyệt này.', 'error');
+          }
+        } catch (err) {
+          console.error('Lỗi sao chép:', err);
+          showToast('Sao chép thất bại.', 'error');
+        }
+      }
+
+      // -------------------- LỌC & RENDER DANH SÁCH CASE --------------------
+
+      /**
+       * Lấy danh sách case theo ngày đang chọn hoặc tất cả (chưa lọc theo trạng thái & tìm kiếm)
+       */
+      function getCasesInScope() {
+        if (state.viewMode === 'all') {
+          return [...state.cases];
+        }
+        return state.cases.filter((item) => item.date === state.selectedDate);
+      }
+
+      /**
+       * Lấy danh sách case đã qua bộ lọc trạng thái và từ khóa tìm kiếm, sắp xếp mới nhất lên trên
+       */
+      function getFilteredCases() {
+        const scoped = getCasesInScope();
+        const query = state.searchQuery.trim().toLowerCase();
+
+        return scoped
+          .filter((item) => {
+            // Lọc theo trạng thái
+            if (state.statusFilter !== 'all' && item.status !== state.statusFilter) {
+              return false;
+            }
+            // Lọc theo từ khóa tìm kiếm
+            if (query) {
+              const titleMatch = (item.title || '').toLowerCase().includes(query);
+              const contentMatch = (item.content || '').toLowerCase().includes(query);
+              return titleMatch || contentMatch;
+            }
+            return true;
+          })
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      /**
+       * Cập nhật giao diện toàn bộ màn hình chính
+       */
+      function render() {
+        // 1. Đồng bộ input chọn ngày và nút Hôm nay / Tất cả
+        els.datePicker.value = state.selectedDate;
+        const today = getTodayStr();
+        const isTodayActive = state.viewMode === 'day' && state.selectedDate === today;
+        const isAllActive = state.viewMode === 'all';
+
+        // Style nút Hôm nay
+        els.btnToday.className = isTodayActive
+          ? 'px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-blue-600 text-white shadow-sm'
+          : 'px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700';
+
+        // Style nút Tất cả
+        els.btnAllDays.className = isAllActive
+          ? 'px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-blue-600 text-white shadow-sm'
+          : 'px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700';
+
+        // 2. Cập nhật thống kê
+        const scopedCases = getCasesInScope();
+        const totalCount = scopedCases.length;
+        const pendingCount = scopedCases.filter((c) => c.status !== 'done').length;
+        const doneCount = scopedCases.filter((c) => c.status === 'done').length;
+
+        els.statTotal.textContent = totalCount;
+        els.statPending.textContent = pendingCount;
+        els.statDone.textContent = doneCount;
+
+        // Cập nhật highlight nút lọc trạng thái
+        els.statusFilterBtns.forEach((btn) => {
+          const filterVal = btn.getAttribute('data-status-filter');
+          if (filterVal === state.statusFilter) {
+            btn.className =
+              'status-filter-btn flex flex-col items-center justify-center py-2 px-2 rounded-xl border text-center transition active:scale-95 bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-950/70 dark:border-blue-700 dark:text-blue-300 ring-1 ring-blue-500/30';
+          } else {
+            btn.className =
+              'status-filter-btn flex flex-col items-center justify-center py-2 px-2 rounded-xl border text-center transition active:scale-95 bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-300';
+          }
+        });
+
+        // 3. Cập nhật tiêu đề phụ
+        if (state.viewMode === 'all') {
+          els.listHeading.textContent = 'Tất cả các case đã lưu';
+        } else if (state.selectedDate === today) {
+          els.listHeading.textContent = `Danh sách case hôm nay (${formatDateVN(today)})`;
+        } else {
+          els.listHeading.textContent = `Danh sách case ngày ${formatDateVN(state.selectedDate)}`;
+        }
+
+        // 4. Lọc và render danh sách thẻ case
+        const filtered = getFilteredCases();
+        els.listCountLabel.textContent = `${filtered.length} case`;
+
+        if (filtered.length === 0) {
+          els.caseList.innerHTML = '';
+          els.emptyState.classList.remove('hidden');
+
+          if (state.searchQuery.trim() !== '') {
+            els.emptyTitle.textContent = 'Không tìm thấy case phù hợp';
+            els.emptySubtitle.textContent = `Không có kết quả nào khớp với "${state.searchQuery.trim()}".`;
+          } else if (state.statusFilter !== 'all') {
+            els.emptyTitle.textContent =
+              state.statusFilter === 'done'
+                ? 'Chưa có case nào hoàn thành'
+                : 'Không có case nào đang xử lý';
+            els.emptySubtitle.textContent = 'Bạn có thể chuyển bộ lọc về "Tổng case" để xem toàn bộ.';
+          } else {
+            els.emptyTitle.textContent =
+              state.viewMode === 'all'
+                ? 'Chưa có dữ liệu case nào'
+                : 'Chưa có case nào trong ngày này';
+            els.emptySubtitle.textContent =
+              'Bấm nút "+ Thêm Case" ở góc dưới bên phải để ghi chú công việc ngay.';
+          }
+          return;
+        }
+
+        els.emptyState.classList.add('hidden');
+
+        // Tạo HTML cho từng thẻ case
+        els.caseList.innerHTML = filtered
+          .map((item) => {
+            const isDone = item.status === 'done';
+            const timeLabel = formatTimeHM(item.createdAt);
+            const updatedLabel =
+              item.updatedAt && item.updatedAt !== item.createdAt
+                ? ` • Sửa ${formatTimeHM(item.updatedAt)}`
+                : '';
+            const datePrefix = state.viewMode === 'all' ? `${formatDateVN(item.date)} • ` : '';
+
+            return `
+              <article
+                class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border ${
+                  isDone
+                    ? 'border-emerald-200/80 dark:border-emerald-900/60'
+                    : 'border-slate-200/90 dark:border-slate-800'
+                } transition-all"
+              >
+                <!-- Phần đầu thẻ: Trạng thái & Thời gian -->
+                <div class="flex items-center justify-between gap-2 mb-2.5">
+                  <button
+                    type="button"
+                    data-action="toggle-status"
+                    data-id="${item.id}"
+                    title="Bấm để đổi trạng thái"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold active:scale-95 transition ${
+                      isDone
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                    }"
+                  >
+                    <span class="w-2 h-2 rounded-full ${isDone ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+                    ${isDone ? 'Đã xong' : 'Đang xử lý'}
+                  </button>
+
+                  <span class="text-xs font-medium text-slate-400 dark:text-slate-500 tabular-nums">
+                    ${datePrefix}${timeLabel}${updatedLabel}
+                  </span>
+                </div>
+
+                <!-- Tiêu đề Case -->
+                <h3 class="text-base font-bold text-slate-900 dark:text-white leading-snug break-words ${
+                  isDone ? 'line-through opacity-70' : ''
+                }">
+                  ${escapeHTML(item.title)}
+                </h3>
+
+                <!-- Nội dung chi tiết (giữ nguyên xuống dòng) -->
+                ${
+                  item.content
+                    ? `<p class="mt-2 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed ${
+                        isDone ? 'opacity-70' : ''
+                      }">${escapeHTML(item.content)}</p>`
+                    : ''
+                }
+
+                <!-- Thanh nút hành động: Chỉnh sửa & Xóa -->
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    data-action="edit"
+                    data-id="${item.id}"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 active:scale-95 transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Chỉnh sửa
+                  </button>
+
+                  <button
+                    type="button"
+                    data-action="delete"
+                    data-id="${item.id}"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-950 text-rose-600 dark:text-rose-400 active:scale-95 transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Xóa
+                  </button>
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+      }
+
+      // -------------------- QUẢN LÝ MODAL THÊM / SỬA --------------------
+
+      function openCaseModal(caseToEdit = null) {
+        els.titleError.classList.add('hidden');
+        els.caseTitleInput.classList.remove('border-rose-500');
+
+        if (caseToEdit) {
+          els.modalTitle.textContent = 'Chỉnh Sửa Case';
+          els.caseIdInput.value = caseToEdit.id;
+          els.caseTitleInput.value = caseToEdit.title;
+          els.caseContentInput.value = caseToEdit.content || '';
+          els.caseDateInput.value = caseToEdit.date || getTodayStr();
+        } else {
+          els.modalTitle.textContent = 'Thêm Case Mới';
+          els.caseIdInput.value = '';
+          els.caseTitleInput.value = '';
+          els.caseContentInput.value = '';
+          // Nếu đang xem theo 1 ngày cụ thể thì lấy ngày đó, còn xem Tất cả thì lấy Hôm nay
+          els.caseDateInput.value =
+            state.viewMode === 'day' ? state.selectedDate : getTodayStr();
+        }
+
+        els.caseModal.classList.remove('hidden');
+        els.caseModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+
+        // Focus nhẹ vào ô tiêu đề
+        setTimeout(() => els.caseTitleInput.focus(), 100);
+      }
+
+      function closeCaseModal() {
+        els.caseModal.classList.add('hidden');
+        els.caseModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+      }
+
+      // -------------------- QUẢN LÝ MODAL XÓA --------------------
+
+      function openDeleteModal(caseId) {
+        const target = state.cases.find((c) => c.id === caseId);
+        if (!target) return;
+
+        state.pendingDeleteId = caseId;
+        els.deleteModalDesc.textContent = `Bạn có chắc muốn xóa case "${target.title}" không? Dữ liệu sẽ không thể khôi phục.`;
+        els.deleteModal.classList.remove('hidden');
+        els.deleteModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+      }
+
+      function closeDeleteModal() {
+        state.pendingDeleteId = null;
+        els.deleteModal.classList.add('hidden');
+        els.deleteModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+      }
+
+      // -------------------- QUẢN LÝ MODAL BACKUP --------------------
+
+      function openBackupModal() {
+        els.backupModal.classList.remove('hidden');
+        els.backupModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+      }
+
+      function closeBackupModal() {
+        els.backupModal.classList.add('hidden');
+        els.backupModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+      }
+
+      // -------------------- XỬ LÝ SỰ KIỆN (EVENT LISTENERS) --------------------
+
+      // 1. Đổi chế độ Sáng / Tối
+      els.btnToggleTheme.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        try {
+          localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+        } catch (e) {
+          // Bỏ qua nếu bị chặn
+        }
+      });
+
+      // 2. Chọn ngày & Chuyển chế độ xem
+      els.datePicker.addEventListener('change', (e) => {
+        if (e.target.value) {
+          state.selectedDate = e.target.value;
+          state.viewMode = 'day';
+          render();
+        }
+      });
+
+      els.btnPrevDay.addEventListener('click', () => {
+        state.selectedDate = shiftDate(state.selectedDate, -1);
+        state.viewMode = 'day';
+        render();
+      });
+
+      els.btnNextDay.addEventListener('click', () => {
+        state.selectedDate = shiftDate(state.selectedDate, 1);
+        state.viewMode = 'day';
+        render();
+      });
+
+      els.btnToday.addEventListener('click', () => {
+        state.selectedDate = getTodayStr();
+        state.viewMode = 'day';
+        render();
+      });
+
+      els.btnAllDays.addEventListener('click', () => {
+        state.viewMode = 'all';
+        render();
+      });
+
+      // 3. Lọc theo trạng thái từ thẻ thống kê
+      els.statusFilterBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.statusFilter = btn.getAttribute('data-status-filter') || 'all';
+          render();
+        });
+      });
+
+      // 4. Tìm kiếm nhanh
+      els.searchInput.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        els.btnClearSearch.classList.toggle('hidden', state.searchQuery.length === 0);
+        render();
+      });
+
+      els.btnClearSearch.addEventListener('click', () => {
+        state.searchQuery = '';
+        els.searchInput.value = '';
+        els.btnClearSearch.classList.add('hidden');
+        els.searchInput.focus();
+        render();
+      });
+
+      // 5. Thêm mới case
+      els.btnAddCase.addEventListener('click', () => openCaseModal(null));
+      els.btnCloseModal.addEventListener('click', closeCaseModal);
+      els.btnCancelModal.addEventListener('click', closeCaseModal);
+
+      // Đóng modal khi bấm ra ngoài vùng nền tối
+      els.caseModal.addEventListener('click', (e) => {
+        if (e.target === els.caseModal) closeCaseModal();
+      });
+
+      // Ẩn báo lỗi khi người dùng bắt đầu nhập tiêu đề
+      els.caseTitleInput.addEventListener('input', () => {
+        if (els.caseTitleInput.value.trim()) {
+          els.titleError.classList.add('hidden');
+          els.caseTitleInput.classList.remove('border-rose-500');
+        }
+      });
+
+      // Lưu Form Thêm / Sửa Case
+      els.caseForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const title = els.caseTitleInput.value.trim();
+        const content = els.caseContentInput.value.trim();
+        const dateVal = els.caseDateInput.value || getTodayStr();
+        const editId = els.caseIdInput.value;
+
+        if (!title) {
+          els.titleError.classList.remove('hidden');
+          els.caseTitleInput.classList.add('border-rose-500');
+          els.caseTitleInput.focus();
+          return;
+        }
+
+        const nowISO = new Date().toISOString();
+
+        if (editId) {
+          // Cập nhật case đã có
+          const idx = state.cases.findIndex((c) => c.id === editId);
+          if (idx !== -1) {
+            state.cases[idx] = {
+              ...state.cases[idx],
+              title,
+              content,
+              date: dateVal,
+              updatedAt: nowISO,
+            };
+            saveCases();
+            showToast('Đã cập nhật case!');
+          }
+        } else {
+          // Tạo case mới
+          const newCase = {
+            id: generateId(),
+            title,
+            content,
+            date: dateVal,
+            status: 'pending', // Mặc định là 'Đang xử lý'
+            createdAt: nowISO,
+            updatedAt: nowISO,
+          };
+          state.cases.unshift(newCase);
+          saveCases();
+
+          // Chuyển ngày đang xem sang ngày của case mới (nếu đang ở chế độ xem theo ngày)
+          if (state.viewMode === 'day' && state.selectedDate !== dateVal) {
+            state.selectedDate = dateVal;
+          }
+          showToast('Đã thêm case mới!');
+        }
+
+        closeCaseModal();
+        render();
+      });
+
+      // 6. Event Delegation cho danh sách thẻ Case (Đổi trạng thái, Sửa, Xóa)
+      els.caseList.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+
+        const action = btn.getAttribute('data-action');
+        const id = btn.getAttribute('data-id');
+
+        if (action === 'toggle-status') {
+          const item = state.cases.find((c) => c.id === id);
+          if (item) {
+            item.status = item.status === 'done' ? 'pending' : 'done';
+            item.updatedAt = new Date().toISOString();
+            saveCases();
+            render();
+            showToast(
+              item.status === 'done' ? 'Đã đánh dấu hoàn thành!' : 'Đã chuyển về Đang xử lý',
+              'info'
+            );
+          }
+        } else if (action === 'edit') {
+          const item = state.cases.find((c) => c.id === id);
+          if (item) openCaseModal(item);
+        } else if (action === 'delete') {
+          openDeleteModal(id);
+        }
+      });
+
+      // 7. Xác nhận Xóa Case
+      els.btnCancelDelete.addEventListener('click', closeDeleteModal);
+      els.deleteModal.addEventListener('click', (e) => {
+        if (e.target === els.deleteModal) closeDeleteModal();
+      });
+
+      els.btnConfirmDelete.addEventListener('click', () => {
+        if (!state.pendingDeleteId) return;
+        state.cases = state.cases.filter((c) => c.id !== state.pendingDeleteId);
+        saveCases();
+        closeDeleteModal();
+        render();
+        showToast('Đã xóa case.', 'info');
+      });
+
+      // 8. Các tính năng Sao lưu / Xuất / Nhập dữ liệu
+      els.btnOpenBackup.addEventListener('click', openBackupModal);
+      els.btnCloseBackup.addEventListener('click', closeBackupModal);
+      els.backupModal.addEventListener('click', (e) => {
+        if (e.target === els.backupModal) closeBackupModal();
+      });
+
+      // Sao chép báo cáo dạng Text
+      els.btnCopyText.addEventListener('click', () => {
+        const list = getFilteredCases();
+        if (list.length === 0) {
+          showToast('Không có case nào để sao chép.', 'error');
+          return;
+        }
+        const header =
+          state.viewMode === 'all'
+            ? `DANH SÁCH TẤT CẢ CASE (${list.length})`
+            : `BÁO CÁO CASE NGÀY ${formatDateVN(state.selectedDate)} (${list.length})`;
+
+        const lines = list.map((c, i) => {
+          const st = c.status === 'done' ? '[Đã xong]' : '[Đang xử lý]';
+          const contentPart = c.content ? `\n   Ghi chú: ${c.content}` : '';
+          return `${i + 1}. ${st} ${c.title} (${formatTimeHM(c.createdAt)})${contentPart}`;
+        });
+
+        copyToClipboard(`${header}\n\n${lines.join('\n\n')}`, 'Đã sao chép danh sách dạng văn bản!');
+        closeBackupModal();
+      });
+
+      // Xuất file JSON
+      els.btnExportJson.addEventListener('click', () => {
+        try {
+          const dataStr = JSON.stringify(state.cases, null, 2);
+          const blob = new Blob([dataStr], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `case-notes-backup-${getTodayStr()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('Đã tải xuống file sao lưu JSON!');
+          closeBackupModal();
+        } catch (err) {
+          console.error('Lỗi xuất file:', err);
+          showToast('Không thể xuất file trên trình duyệt này.', 'error');
+        }
+      });
+
+      // Sao chép chuỗi JSON
+      els.btnCopyJson.addEventListener('click', () => {
+        const dataStr = JSON.stringify(state.cases, null, 2);
+        copyToClipboard(dataStr, 'Đã sao chép toàn bộ dữ liệu JSON!');
+        closeBackupModal();
+      });
+
+      // Khôi phục từ file JSON
+      els.importJsonInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const imported = JSON.parse(event.target.result);
+            if (!Array.isArray(imported)) {
+              throw new Error('Định dạng không hợp lệ');
+            }
+
+            // Gộp dữ liệu, tránh trùng lặp ID
+            const existingIds = new Set(state.cases.map((c) => c.id));
+            let addedCount = 0;
+
+            imported.forEach((item) => {
+              if (item && item.title) {
+                const safeId = item.id && !existingIds.has(item.id) ? item.id : generateId();
+                existingIds.add(safeId);
+                state.cases.push({
+                  id: safeId,
+                  title: String(item.title),
+                  content: item.content ? String(item.content) : '',
+                  date: item.date || getTodayStr(),
+                  status: item.status === 'done' ? 'done' : 'pending',
+                  createdAt: item.createdAt || new Date().toISOString(),
+                  updatedAt: item.updatedAt || item.createdAt || new Date().toISOString(),
+                });
+                addedCount++;
+              }
+            });
+
+            saveCases();
+            render();
+            closeBackupModal();
+            showToast(`Đã khôi phục thành công ${addedCount} case!`);
+          } catch (err) {
+            console.error('Lỗi nhập JSON:', err);
+            showToast('File JSON không hợp lệ!', 'error');
+          } finally {
+            e.target.value = '';
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      // Hỗ trợ đóng modal bằng phím ESC (khi dùng trên máy tính)
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeCaseModal();
+          closeDeleteModal();
+          closeBackupModal();
+        }
+      });
+
+      // -------------------- KHỞI TẠO ỨNG DỤNG --------------------
+      function init() {
+        updateLiveClock();
+        setInterval(updateLiveClock, 1000);
+
+        loadCases();
+        render();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
